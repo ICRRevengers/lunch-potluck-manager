@@ -250,6 +250,13 @@
     let debounceTimer = null;
     let pendingForceAllow = false;
 
+    // Detect API Base URL:
+    // If running on github.io or file://, try connecting to public Cloudflare tunnel, otherwise relative ''
+    const DEFAULT_REMOTE_API = 'https://strengths-scheduling-crown-plastics.trycloudflare.com';
+    let API_BASE_URL = (window.location.hostname.includes('github.io') || window.location.protocol === 'file:')
+      ? DEFAULT_REMOTE_API
+      : '';
+
     // Helper: format YYYY-MM-DD
     function getTodayString() {
       const now = new Date();
@@ -304,15 +311,22 @@
       // Test backend connection
       await testBackendConnection();
       await loadDishes();
+
+      // Auto poll every 10s to get updates from colleagues
+      setInterval(() => {
+        if (isServerMode) {
+          loadDishes(true); // silent refresh
+        }
+      }, 10000);
     }
 
-    // Test if Python REST backend is alive
+    // Test if REST backend is alive
     async function testBackendConnection() {
       try {
-        const res = await fetch('/api/dishes?date=' + currentDate, { method: 'GET' });
+        const res = await fetch(`${API_BASE_URL}/api/dishes?date=${currentDate}`, { method: 'GET' });
         if (res.ok) {
           isServerMode = true;
-          document.getElementById('connectionBadge').innerHTML = '● Máy chủ (SQLite)';
+          document.getElementById('connectionBadge').innerHTML = '● Trực Tuyến (Đồng Bộ)';
           document.getElementById('connectionBadge').className = 'hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-600 text-white';
           return;
         }
@@ -325,16 +339,16 @@
     }
 
     // Load Dishes from Server or LocalStorage
-    async function loadDishes() {
+    async function loadDishes(silent = false) {
       if (isServerMode) {
         try {
-          const res = await fetch(`/api/dishes?date=${currentDate}`);
+          const res = await fetch(`${API_BASE_URL}/api/dishes?date=${currentDate}`);
           const json = await res.json();
           if (json.success) {
             dishesData = json.data;
           }
         } catch (err) {
-          console.error("Lỗi tải từ server, chuyển sang local:", err);
+          if (!silent) console.error("Lỗi tải từ server, chuyển sang local:", err);
           loadLocalDishes();
         }
       } else {
@@ -533,7 +547,7 @@
 
       if (isServerMode) {
         try {
-          const res = await fetch('/api/dishes', {
+          const res = await fetch(`${API_BASE_URL}/api/dishes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -584,7 +598,7 @@
 
       if (isServerMode) {
         try {
-          const res = await fetch(`/api/dishes/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_BASE_URL}/api/dishes/${id}`, { method: 'DELETE' });
           const json = await res.json();
           if (json.success) {
             showToast(`Đã xóa món "${dishName}"`, '🗑️');
