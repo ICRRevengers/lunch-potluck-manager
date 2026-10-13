@@ -71,19 +71,24 @@
     <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-100">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <span>🥗 Thực đơn hôm nay</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <span>🥗 Thực đơn 20/10</span>
+            </h2>
             <span id="dishCountBadge" class="text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">0 món</span>
-          </h2>
+            <span id="totalServingsBadge" class="text-xs bg-rose-600 text-white font-extrabold px-3 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+              <span>👥</span> <span id="headerTotalServingsText">0 suất</span>
+            </span>
+          </div>
           <p id="menuAdvisorText" class="text-xs sm:text-sm text-slate-500 mt-1">Đang tải tình hình thực đơn...</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2">
-          <button id="copyMenuBtn" onclick="copyMenuToClipboard()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+          <button id="copyMenuBtn" onclick="copyMenuToClipboard()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
             Sao chép gửi Zalo/Slack
           </button>
-          <button id="exportCsvBtn" onclick="exportToCsv()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+          <button id="exportCsvBtn" onclick="exportToCsv()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
             Tải CSV / Excel
           </button>
@@ -93,6 +98,27 @@
       <!-- Category Badges Grid -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-4" id="categoryStatsGrid">
         <!-- Will be populated dynamically -->
+      </div>
+
+      <!-- Servings Summary Banner -->
+      <div id="servingsSummaryBanner" class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-rose-50/80 via-amber-50/60 to-orange-50/80 border border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center text-xl shadow-xs shrink-0">
+            👥
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-extrabold text-sm text-slate-900">Tổng Khẩu Phần Bữa Trưa:</span>
+              <span id="bannerTotalServings" class="font-black text-rose-700 text-base bg-white px-2.5 py-0.5 rounded-lg border border-rose-200 shadow-2xs">0 suất</span>
+              <span id="bannerPeopleEstimate" class="text-[11px] font-semibold text-slate-600 bg-white/80 px-2 py-0.5 rounded-md border border-slate-200">
+                Ước tính: ~0 người ăn
+              </span>
+            </div>
+            <p id="servingsBreakdownText" class="text-slate-600 mt-1 leading-relaxed">
+              <!-- Rendered via JS -->
+            </p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -760,51 +786,99 @@
       renderDishesList();
     }
 
-    // Calculate Nutritional Balance & Stats
+    // Calculate Nutritional Balance & Servings Stats
     function renderStats() {
       const currentDishes = dishesData.filter(d => d.lunch_date === currentDate);
       const totalDishes = currentDishes.length;
 
+      // Count dishes & servings per category
+      const counts = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0, khac: 0 };
+      const categoryServings = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0, khac: 0 };
+      let totalServings = 0;
+
+      currentDishes.forEach(d => {
+        const cat = d.category || 'khac';
+        const serv = parseInt(d.servings) || 4;
+        totalServings += serv;
+
+        if (counts[cat] !== undefined) {
+          counts[cat]++;
+          categoryServings[cat] += serv;
+        } else {
+          counts.khac = (counts.khac || 0) + 1;
+          categoryServings.khac = (categoryServings.khac || 0) + serv;
+        }
+      });
+
+      // Update badge counts
       document.getElementById('dishCountBadge').textContent = `${totalDishes} món`;
       const quickCount = document.getElementById('quickListCount');
       if (quickCount) quickCount.textContent = totalDishes;
       const regBadge = document.getElementById('registeredDishesBadge');
-      if (regBadge) regBadge.textContent = `${totalDishes} món`;
+      if (regBadge) regBadge.textContent = `${totalDishes} món • ${totalServings} suất`;
 
-      // Count per category
-      const counts = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0 };
-      currentDishes.forEach(d => {
-        if (counts[d.category] !== undefined) {
-          counts[d.category]++;
+      // Header Total Servings badge
+      const headerServings = document.getElementById('headerTotalServingsText');
+      if (headerServings) headerServings.textContent = `${totalServings} suất ăn`;
+
+      // Banner Total Servings & Capacity Estimate
+      const bannerServings = document.getElementById('bannerTotalServings');
+      if (bannerServings) bannerServings.textContent = `${totalServings} suất ăn`;
+
+      const bannerEstimate = document.getElementById('bannerPeopleEstimate');
+      // Estimation logic: Món mặn là trục chính, hoặc trung bình khẩu phần
+      const estPeople = categoryServings.man > 0 ? categoryServings.man : Math.round(totalServings / 2);
+      if (bannerEstimate) {
+        bannerEstimate.textContent = totalDishes > 0 ? `Ước tính đủ no cho: ~${estPeople} người` : 'Chưa có dữ liệu';
+      }
+
+      // Breakdown text
+      const breakdownEl = document.getElementById('servingsBreakdownText');
+      if (breakdownEl) {
+        if (totalDishes === 0) {
+          breakdownEl.textContent = 'Chưa có món ăn nào được đăng ký hôm nay. Hãy rủ anh em cùng đăng ký nhé!';
+        } else {
+          breakdownEl.innerHTML = `
+            Phân bổ suất ăn: 
+            <span class="font-bold text-rose-700">🥩 Mặn: ${categoryServings.man} suất</span> • 
+            <span class="font-bold ${categoryServings.canh > 0 ? 'text-blue-700' : 'text-slate-400'}">🍲 Canh: ${categoryServings.canh} suất</span> • 
+            <span class="font-bold ${categoryServings.rau > 0 ? 'text-emerald-700' : 'text-slate-400'}">🥗 Rau: ${categoryServings.rau} suất</span> • 
+            <span class="font-bold ${categoryServings.tinh_bot > 0 ? 'text-amber-800' : 'text-rose-600 bg-rose-100/70 px-1.5 py-0.5 rounded font-extrabold'}">🍚 Cơm/Xôi: ${categoryServings.tinh_bot} suất</span> • 
+            <span class="font-bold text-purple-700">🍉 Tráng miệng/Nước: ${categoryServings.trang_mieng} suất</span>
+          `;
         }
-      });
+      }
 
-      // Advice message
+      // Smart Advice message
       const advisor = document.getElementById('menuAdvisorText');
       if (totalDishes === 0) {
         advisor.textContent = 'Chưa có món nào hôm nay. Hãy cùng rủ anh em đăng ký nhé!';
-      } else if (counts.canh === 0) {
-        advisor.innerHTML = '💡 <span class="text-amber-700 font-semibold">Chưa có món canh nào!</span> Anh em tiếp theo nên đăng ký thêm một nồi canh chua/súp thanh mát nhé.';
-      } else if (counts.rau === 0) {
-        advisor.innerHTML = '💡 <span class="text-emerald-700 font-semibold">Thiếu món rau/salad!</span> Cần thêm rau luộc hoặc dưa góp để đỡ ngấy.';
       } else if (counts.tinh_bot === 0) {
-        advisor.innerHTML = '💡 <span class="text-amber-800 font-semibold">Ai cắm cơm chưa?</span> Chưa thấy ai đăng ký cơm trắng hoặc bánh mì/xôi.';
+        advisor.innerHTML = '🚨 <span class="text-rose-700 font-extrabold">Chưa có ai mang cơm/xôi!</span> Đã có <b>' + categoryServings.man + ' suất món mặn</b> rồi, anh em tiếp theo nên đăng ký cơm hoặc bánh mì/xôi nhé.';
+      } else if (counts.canh === 0) {
+        advisor.innerHTML = '💡 <span class="text-blue-700 font-semibold">Chưa có món canh nào!</span> Cần thêm một nồi canh súp thanh mát để ăn kèm cho đỡ khô.';
+      } else if (counts.rau === 0) {
+        advisor.innerHTML = '💡 <span class="text-emerald-700 font-semibold">Thiếu rau xanh!</span> Anh em đăng ký thêm rau củ luộc hoặc salad dưa góp nhé.';
       } else {
-        advisor.innerHTML = '🎉 <span class="text-emerald-700 font-semibold">Thực đơn cực kỳ cân bằng!</span> Đầy đủ mặn, canh, rau củ và tinh bột.';
+        advisor.innerHTML = `🎉 <span class="text-emerald-700 font-semibold">Thực đơn cực kỳ đủ đầy!</span> Tổng <b>${totalServings} suất ăn</b>, đáp ứng trọn vẹn cho cả team.`;
       }
 
-      // Render category stats grid
+      // Render category stats grid with both dishes count & servings
       const statsGrid = document.getElementById('categoryStatsGrid');
       const catKeys = ['man', 'canh', 'rau', 'tinh_bot', 'trang_mieng'];
       statsGrid.innerHTML = catKeys.map(k => {
         const info = CATEGORIES[k];
         const count = counts[k] || 0;
+        const serv = categoryServings[k] || 0;
         return `
-          <div class="rounded-xl p-3 border ${count > 0 ? 'border-amber-200 bg-amber-50/50' : 'border-slate-100 bg-slate-50/50'} flex items-center space-x-2.5">
+          <div class="rounded-xl p-3 border ${count > 0 ? 'border-amber-200 bg-amber-50/60 shadow-2xs' : 'border-slate-100 bg-slate-50/50'} flex items-center space-x-2.5 transition">
             <span class="text-2xl">${info.icon}</span>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500">${info.label.split(' / ')[0]}</p>
-              <p class="text-sm font-extrabold ${count > 0 ? 'text-amber-900' : 'text-slate-400'}">${count} món</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-[11px] font-semibold text-slate-500 truncate">${info.label.split(' / ')[0]}</p>
+              <div class="flex items-baseline gap-1.5 flex-wrap">
+                <span class="text-sm font-extrabold ${count > 0 ? 'text-amber-900' : 'text-slate-400'}">${count} món</span>
+                <span class="text-[11px] font-bold ${serv > 0 ? 'text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded' : 'text-slate-400'}">${serv} suất</span>
+              </div>
             </div>
           </div>
         `;
@@ -819,8 +893,30 @@
         return;
       }
 
+      // Calculate servings
+      let totalServings = 0;
+      const catServings = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0, khac: 0 };
+      const catCounts = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0, khac: 0 };
+      currentDishes.forEach(d => {
+        const serv = parseInt(d.servings) || 4;
+        totalServings += serv;
+        const c = d.category || 'khac';
+        if (catServings[c] !== undefined) {
+          catServings[c] += serv;
+          catCounts[c]++;
+        }
+      });
+
       let text = `💐 20/10 LUNCH PREPARE - THỰC ĐƠN BỮA TRƯA MỪNG NGÀY 20/10 (${currentDate})\n`;
       text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `👥 TỔNG KHẨU PHẦN: ~${totalServings} SUẤT ĂN (${currentDishes.length} món)\n`;
+      text += `  • Món mặn: ${catServings.man} suất (${catCounts.man} món)\n`;
+      text += `  • Canh/Súp: ${catServings.canh} suất (${catCounts.canh} món)\n`;
+      text += `  • Rau/Salad: ${catServings.rau} suất (${catCounts.rau} món)\n`;
+      text += `  • Cơm/Xôi: ${catServings.tinh_bot} suất (${catCounts.tinh_bot} món${catCounts.tinh_bot === 0 ? ' - ⚠️ Cần người cắm cơm!' : ''})\n`;
+      text += `  • Tráng miệng/Nước: ${catServings.trang_mieng} suất (${catCounts.trang_mieng} món)\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `📋 CHI TIẾT CÁC MÓN:\n`;
 
       const grouped = {};
       currentDishes.forEach(d => {
@@ -832,12 +928,12 @@
       for (const [catName, list] of Object.entries(grouped)) {
         text += `\n📌 ${catName}:\n`;
         list.forEach(item => {
-          text += `  • ${item.dish_name} (bởi ${item.user_name}${item.note ? ' - ' + item.note : ''})\n`;
+          text += `  • ${item.dish_name} (bởi ${item.user_name} - ${item.servings || 4} suất${item.note ? ', ' + item.note : ''})\n`;
         });
       }
 
       text += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
-      text += `👉 Tổng cộng: ${currentDishes.length} món. Chúc anh em bữa trưa ngon miệng! 😋`;
+      text += `👉 Ước tính phục vụ đủ no cho khoảng ~${catServings.man > 0 ? catServings.man : Math.round(totalServings/2)} người. Chúc anh chị em ngon miệng! 😋`;
 
       navigator.clipboard.writeText(text).then(() => {
         showToast('Đã sao chép menu! Dán ngay vào Zalo/Slack nhé.', '📋');
