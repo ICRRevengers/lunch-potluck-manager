@@ -34,7 +34,7 @@ Hệ thống quản lý đăng ký món ăn tự nấu mang lên công ty cho an
 Mở Terminal và chạy lệnh:
 
 ```bash
-cd /home/phu/.gemini/antigravity/scratch/lunch-potluck-manager
+cd /home/phu/workspace/repo/lunch-potluck-manager
 python3 server.py
 ```
 
@@ -50,6 +50,6 @@ Mở file `index.html` trực tiếp bằng trình duyệt Chrome/Firefox/Edge. 
 
 ## 📂 Cấu Trúc Thư Mục
 
-- [`index.html`](file:///home/phu/.gemini/antigravity/scratch/lunch-potluck-manager/index.html): Giao diện người dùng web hoàn chỉnh.
-- [`server.py`](file:///home/phu/.gemini/antigravity/scratch/lunch-potluck-manager/server.py): Máy chủ Python 3 + SQLite không cần cài thêm thư viện phụ thuộc (`pip install`).
-- [`potluck.db`](file:///home/phu/.gemini/antigravity/scratch/lunch-potluck-manager/potluck.db): Cơ sở dữ liệu SQLite lưu danh sách món ăn (tự động tạo khi chạy).
+- [`index.html`](file:///home/phu/workspace/repo/lunch-potluck-manager/index.html): Giao diện người dùng web hoàn chỉnh.
+- [`server.py`](file:///home/phu/workspace/repo/lunch-potluck-manager/server.py): Máy chủ Python 3 + SQLite không cần cài thêm thư viện phụ thuộc (`pip install`).
+- [`potluck.db`](file:///home/phu/workspace/repo/lunch-potluck-manager/potluck.db): Cơ sở dữ liệu SQLite lưu danh sách món ăn (tự động tạo khi chạy).

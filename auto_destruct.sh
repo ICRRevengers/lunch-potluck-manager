@@ -2,7 +2,7 @@
 # 20/10 Lunch Prepare - Auto-Destruct and Shutdown Script
 # Executes automatic shutdown of Cloudflare tunnel, Python server, and GitHub Pages
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="/home/phu/workspace/repo/lunch-potluck-manager"
 LOG_FILE="$DIR/destruct.log"
 
 echo "==================================================" >> "$LOG_FILE"

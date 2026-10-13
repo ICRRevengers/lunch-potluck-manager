@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="/home/phu/workspace/repo/lunch-potluck-manager"
 cd "$DIR"
 
 # Kill existing instances if any
