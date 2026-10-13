@@ -10,8 +10,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
     body {
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
     }
     @keyframes pulse-subtle {
       0%, 100% { transform: scale(1); }
@@ -92,11 +96,21 @@
       </div>
     </section>
 
+    <!-- Mobile Quick Navigation Bar (Only on mobile/tablet < lg) -->
+    <div class="lg:hidden bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-sm border border-rose-100 sticky top-2 z-30 flex gap-2">
+      <button type="button" onclick="scrollToSection('formSection')" class="flex-1 py-2.5 px-3 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+        <span>✍️</span> Đăng Ký Món
+      </button>
+      <button type="button" onclick="scrollToSection('listSection')" class="flex-1 py-2.5 px-3 text-xs font-bold rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 transition flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+        <span>🍱</span> Xem Món Đã Đăng Ký (<span id="quickListCount">0</span>)
+      </button>
+    </div>
+
     <!-- Content Layout: Form (Left) & Registered List (Right) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
       
       <!-- LEFT: REGISTRATION FORM -->
-      <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 sticky top-6">
+      <div id="formSection" class="lg:col-span-5 bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-100 lg:sticky lg:top-6 scroll-mt-20">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
           <div>
             <h3 class="text-base font-bold text-slate-800">Đăng ký món mang đến</h3>
@@ -202,8 +216,16 @@
       </div>
 
       <!-- RIGHT: REGISTERED DISHES LIST -->
-      <div class="lg:col-span-7 space-y-4">
+      <div id="listSection" class="lg:col-span-7 space-y-4 scroll-mt-20">
         
+        <div class="flex items-center justify-between px-1 pt-2 lg:pt-0">
+          <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+            <span>🍱 Món Anh Em Đã Đăng Ký</span>
+            <span id="registeredDishesBadge" class="text-xs bg-rose-100 text-rose-800 font-bold px-2.5 py-0.5 rounded-full">0 món</span>
+          </h3>
+          <span class="text-xs text-slate-400 font-medium hidden sm:inline">Tự động cập nhật</span>
+        </div>
+
         <!-- Filter and Search Header -->
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="relative w-full sm:w-64">
@@ -584,6 +606,9 @@
             showToast(`Đã thêm món "${dishName}" thành công!`, '🎉');
             resetForm();
             loadDishes();
+            if (window.innerWidth < 1024) {
+              setTimeout(() => scrollToSection('listSection'), 350);
+            }
           } else {
             showToast(json.error || 'Có lỗi xảy ra', '❌');
           }
@@ -605,6 +630,9 @@
       resetForm();
       renderDishesList();
       renderStats();
+      if (window.innerWidth < 1024) {
+        setTimeout(() => scrollToSection('listSection'), 350);
+      }
     }
 
     function resetForm() {
@@ -738,6 +766,10 @@
       const totalDishes = currentDishes.length;
 
       document.getElementById('dishCountBadge').textContent = `${totalDishes} món`;
+      const quickCount = document.getElementById('quickListCount');
+      if (quickCount) quickCount.textContent = totalDishes;
+      const regBadge = document.getElementById('registeredDishesBadge');
+      if (regBadge) regBadge.textContent = `${totalDishes} món`;
 
       // Count per category
       const counts = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0 };
@@ -864,6 +896,14 @@
     function escapeJs(str) {
       if (!str) return '';
       return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // Smooth scroll helper for mobile jump navigation
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     // Boot
