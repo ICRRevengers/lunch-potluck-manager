@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Món Ăn Bữa Trưa - Office Potluck</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-amber-50/40 text-slate-800 min-h-screen antialiased">
+
+  <!-- Top Announcement Bar -->
+  <header class="bg-gradient-to-r from-orange-600 via-amber-600 to-emerald-600 text-white shadow-md">
+    <div class="max-w-6xl mx-auto px-4 py-4 sm:py-6">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-3 text-center sm:text-left">
+          <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-2xl shadow-inner shrink-0">
+            🍱
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Cơm Trưa Gắn Kết Anh Em</h1>
+            <p class="text-xs sm:text-sm text-orange-100 font-medium">Mỗi người một món, cả team quây quần ăn trưa ấm cúng</p>
+          </div>
+        </div>
+
+        <!-- Date selector & Mode indicator -->
+        <div class="flex items-center gap-3 bg-white/10 backdrop-blur px-3 py-1.5 rounded-xl border border-white/20">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-orange-100 uppercase tracking-wider">Ngày ăn:</span>
+            <input type="date" id="lunchDateInput" class="bg-white text-slate-800 text-sm font-semibold rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-amber-400 outline-none shadow-sm cursor-pointer">
+          </div>
+          <span id="connectionBadge" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/80 text-white">
+            ● Online
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-8">
+
+    <!-- Overview & Nutritional Balance Stats -->
+    <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-100">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <span>🥗 Thực đơn hôm nay</span>
+            <span id="dishCountBadge" class="text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">0 món</span>
+          </h2>
+          <p id="menuAdvisorText" class="text-xs sm:text-sm text-slate-500 mt-1">Đang tải tình hình thực đơn...</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="copyMenuBtn" onclick="copyMenuToClipboard()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            Sao chép gửi Zalo/Slack
+          </button>
+          <button id="exportCsvBtn" onclick="exportToCsv()" class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Tải CSV / Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Badges Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-4" id="categoryStatsGrid">
+        <!-- Will be populated dynamically -->
+      </div>
+    </section>
+
+    <!-- Content Layout: Form (Left) & Registered List (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT: REGISTRATION FORM -->
+      <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 sticky top-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Đăng ký món mang đến</h3>
+            <p class="text-xs text-slate-500">Nhập tên món để hệ thống tự động kiểm tra trùng</p>
+          </div>
+          <span class="text-xl">✍️</span>
+        </div>
+
+        <form id="dishForm" onsubmit="handleFormSubmit(event)" class="mt-5 space-y-4">
+          <!-- User Name -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" for="userName">
+              Tên bạn / Biệt danh <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <input type="text" id="userName" required placeholder="VD: Anh Nam, Tuấn Anh, Thảo..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm outline-none transition">
+              <span class="absolute right-3 top-2.5 text-slate-400 text-sm">👤</span>
+            </div>
+          </div>
+
+          <!-- Dish Name with Live Duplicate Check -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold text-slate-700 uppercase tracking-wider" for="dishName">
+                Món ăn bạn sẽ mang <span class="text-rose-500">*</span>
+              </label>
+              <span id="checkingIndicator" class="hidden text-xs text-amber-600 font-medium animate-pulse">
+                Đang quét...
+              </span>
+            </div>
+            <div class="relative">
+              <input type="text" id="dishName" required placeholder="VD: Thịt kho tàu, Canh chua cá, Gỏi gà..."
+                oninput="onDishNameInput(this.value)"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm outline-none transition font-medium">
+              <span class="absolute right-3 top-2.5 text-slate-400 text-sm">🍲</span>
+            </div>
+
+            <!-- LIVE DUPLICATE FEEDBACK BOX -->
+            <div id="duplicateFeedback" class="mt-2 hidden rounded-xl p-3 text-xs transition-all duration-200">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Category Selection -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Phân loại món ăn <span class="text-rose-500">*</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2 text-xs" id="categoryChips">
+              <label class="flex items-center p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-amber-50 transition category-option has-[:checked]:bg-amber-100/70 has-[:checked]:border-amber-500 has-[:checked]:font-semibold">
+                <input type="radio" name="category" value="man" checked class="hidden">
+                <span class="mr-2">🥩</span> Món mặn / Đạm
+              </label>
+              <label class="flex items-center p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-amber-50 transition category-option has-[:checked]:bg-amber-100/70 has-[:checked]:border-amber-500 has-[:checked]:font-semibold">
+                <input type="radio" name="category" value="canh" class="hidden">
+                <span class="mr-2">🍲</span> Món canh / Súp
+              </label>
+              <label class="flex items-center p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-amber-50 transition category-option has-[:checked]:bg-amber-100/70 has-[:checked]:border-amber-500 has-[:checked]:font-semibold">
+                <input type="radio" name="category" value="rau" class="hidden">
+                <span class="mr-2">🥗</span> Rau / Gỏi / Salad
+              </label>
+              <label class="flex items-center p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-amber-50 transition category-option has-[:checked]:bg-amber-100/70 has-[:checked]:border-amber-500 has-[:checked]:font-semibold">
+                <input type="radio" name="category" value="tinh_bot" class="hidden">
+                <span class="mr-2">🍚</span> Cơm / Tinh bột
+              </label>
+              <label class="flex items-center p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-amber-50 transition category-option has-[:checked]:bg-amber-100/70 has-[:checked]:border-amber-500 has-[:checked]:font-semibold">
+                <input type="radio" name="category" value="trang_mieng" class="hidden">
+                <span class="mr-2">🍉</span> Tráng miệng / Nước
+              </label>
+              <label class="flex items-center p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-amber-50 transition category-option has-[:checked]:bg-amber-100/70 has-[:checked]:border-amber-500 has-[:checked]:font-semibold">
+                <input type="radio" name="category" value="khac" class="hidden">
+                <span class="mr-2">🍴</span> Khác / Nước chấm
+              </label>
+            </div>
+          </div>
+
+          <!-- Servings & Notes -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" for="servings">
+                Khẩu phần (người)
+              </label>
+              <input type="number" id="servings" value="4" min="1" max="50"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 text-sm outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5" for="dishNote">
+                Ghi chú thêm
+              </label>
+              <input type="text" id="dishNote" placeholder="VD: Cay, ăn nóng..."
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 text-sm outline-none">
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="submitBtn"
+            class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer">
+            <span>Đăng Ký Món Này</span>
+            <span class="text-base">🚀</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- RIGHT: REGISTERED DISHES LIST -->
+      <div class="lg:col-span-7 space-y-4">
+        
+        <!-- Filter and Search Header -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="relative w-full sm:w-64">
+            <input type="text" id="searchFilter" oninput="renderDishesList()" placeholder="Tìm món hoặc người..."
+              class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 outline-none">
+            <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 text-xs">
+            <button onclick="setCategoryFilter('all')" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-amber-500 text-white" data-cat="all">Tất cả</button>
+            <button onclick="setCategoryFilter('man')" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="man">Mặn</button>
+            <button onclick="setCategoryFilter('canh')" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="canh">Canh</button>
+            <button onclick="setCategoryFilter('rau')" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="rau">Rau</button>
+            <button onclick="setCategoryFilter('tinh_bot')" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="tinh_bot">Cơm/Xôi</button>
+            <button onclick="setCategoryFilter('trang_mieng')" class="cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200" data-cat="trang_mieng">Tráng miệng</button>
+          </div>
+        </div>
+
+        <!-- The List of Dishes -->
+        <div id="dishesListContainer" class="space-y-3">
+          <!-- Dishes will be injected here via JavaScript -->
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none max-w-sm bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+    <span id="toastIcon">✨</span>
+    <span id="toastMessage">Thông báo</span>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // Categories configuration
+    const CATEGORIES = {
+      man: { label: 'Món mặn / Đạm', icon: '🥩', color: 'bg-rose-50 text-rose-700 border-rose-200' },
+      canh: { label: 'Món canh / Súp', icon: '🍲', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+      rau: { label: 'Rau / Gỏi / Salad', icon: '🥗', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      tinh_bot: { label: 'Cơm / Tinh bột', icon: '🍚', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+      trang_mieng: { label: 'Tráng miệng / Nước', icon: '🍉', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+      khac: { label: 'Khác', icon: '🍴', color: 'bg-slate-50 text-slate-700 border-slate-200' }
+    };
+
+    // State
+    let currentDate = getTodayString();
+    let currentCategoryFilter = 'all';
+    let dishesData = [];
+    let isServerMode = false;
+    let debounceTimer = null;
+    let pendingForceAllow = false;
+
+    // Helper: format YYYY-MM-DD
+    function getTodayString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Vietnamese Tone Stripper
+    function removeVietnameseTones(str) {
+      if (!str) return '';
+      str = str.toLowerCase().trim();
+      str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');
+      str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e');
+      str = str.replace(/ì|í|ị|ỉ|ĩ/g, 'i');
+      str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o');
+      str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u');
+      str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y');
+      str = str.replace(/đ/g, 'd');
+      str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return str;
+    }
+
+    // LocalStorage Fallback initial sample data
+    function getSampleData() {
+      return [
+        { id: 1, user_name: "Anh Tuấn", dish_name: "Thịt ba chỉ kho trứng", category: "man", servings: 5, note: "Kho đậm đà, có ớt cay riêng", lunch_date: currentDate },
+        { id: 2, user_name: "Chị Mai", dish_name: "Canh chua cá lóc", category: "canh", servings: 6, note: "Có bạc hà, giá, đậu bắp", lunch_date: currentDate },
+        { id: 3, user_name: "Hoàng Nam", dish_name: "Rau muống luộc + Nước sấu", category: "rau", servings: 6, note: "Kèm bát nước mắm tỏi ớt", lunch_date: currentDate },
+        { id: 4, user_name: "Đức Anh", dish_name: "Cơm trắng dẻo (nồi cơm điện)", category: "tinh_bot", servings: 10, note: "Cắm tại pantry lúc 11h30", lunch_date: currentDate },
+        { id: 5, user_name: "Khánh Linh", dish_name: "Dưa hấu ướp lạnh", category: "trang_mieng", servings: 8, note: "Đã gọt sẵn miếng vừa ăn", lunch_date: currentDate }
+      ];
+    }
+
+    // Initialize App
+    async function initApp() {
+      document.getElementById('lunchDateInput').value = currentDate;
+      
+      // Auto-fill last user name if stored
+      const savedName = localStorage.getItem('last_user_name');
+      if (savedName) {
+        document.getElementById('userName').value = savedName;
+      }
+
+      // Date change listener
+      document.getElementById('lunchDateInput').addEventListener('change', (e) => {
+        currentDate = e.target.value;
+        loadDishes();
+      });
+
+      // Test backend connection
+      await testBackendConnection();
+      await loadDishes();
+    }
+
+    // Test if Python REST backend is alive
+    async function testBackendConnection() {
+      try {
+        const res = await fetch('/api/dishes?date=' + currentDate, { method: 'GET' });
+        if (res.ok) {
+          isServerMode = true;
+          document.getElementById('connectionBadge').innerHTML = '● Máy chủ (SQLite)';
+          document.getElementById('connectionBadge').className = 'hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-600 text-white';
+          return;
+        }
+      } catch (err) {
+        // Run in local offline mode
+      }
+      isServerMode = false;
+      document.getElementById('connectionBadge').innerHTML = '● Trình duyệt (LocalStorage)';
+      document.getElementById('connectionBadge').className = 'hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-600 text-white';
+    }
+
+    // Load Dishes from Server or LocalStorage
+    async function loadDishes() {
+      if (isServerMode) {
+        try {
+          const res = await fetch(`/api/dishes?date=${currentDate}`);
+          const json = await res.json();
+          if (json.success) {
+            dishesData = json.data;
+          }
+        } catch (err) {
+          console.error("Lỗi tải từ server, chuyển sang local:", err);
+          loadLocalDishes();
+        }
+      } else {
+        loadLocalDishes();
+      }
+      renderDishesList();
+      renderStats();
+    }
+
+    function loadLocalDishes() {
+      const stored = localStorage.getItem('potluck_dishes_' + currentDate);
+      if (stored) {
+        try {
+          dishesData = JSON.parse(stored);
+        } catch(e) {
+          dishesData = getSampleData();
+        }
+      } else {
+        dishesData = getSampleData();
+        saveLocalDishes();
+      }
+    }
+
+    function saveLocalDishes() {
+      localStorage.setItem('potluck_dishes_' + currentDate, JSON.stringify(dishesData));
+    }
+
+    // DUPLICATE CHECKER ALGORITHM (Client-side real-time)
+    function checkDuplicate(dishInput, date) {
+      const normInput = removeVietnameseTones(dishInput);
+      if (!normInput || normInput.length < 2) {
+        return { hasExact: false, hasSimilar: false, exactMatches: [], similarMatches: [] };
+      }
+
+      // Filter dishes of current date
+      const currentDishes = dishesData.filter(d => d.lunch_date === date);
+      
+      const exactMatches = [];
+      const similarMatches = [];
+      
+      const inputWords = normInput.split(/\s+/).filter(w => w.length > 1);
+      const stopWords = new Set(['mon', 'cac', 'va', 'cung', 'kem', 'voi', 'nau', 'an']);
+      const sigInputWords = inputWords.filter(w => !stopWords.has(w));
+
+      for (const item of currentDishes) {
+        const normItem = removeVietnameseTones(item.dish_name);
+        
+        // 1. Trùng khớp chính xác
+        if (normInput === normItem) {
+          exactMatches.push(item);
+          continue;
+        }
+
+        // 2. Trùng chứa nhau (ví dụ: 'thịt kho' nằm trong 'thịt kho tàu')
+        if (normInput.includes(normItem) || normItem.includes(normInput)) {
+          if (normInput.length >= 4 && normItem.length >= 4) {
+            similarMatches.push({ item, reason: 'Tên món tương đồng hoặc bao hàm nhau' });
+            continue;
+          }
+        }
+
+        // 3. Trùng nhiều từ khóa cốt lõi (ví dụ: 'thịt kho trứng' vs 'thịt kho tàu')
+        const itemWords = normItem.split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
+        const overlap = sigInputWords.filter(w => itemWords.includes(w));
+
+        if (overlap.length >= 2) {
+          similarMatches.push({ 
+            item, 
+            reason: `Cùng chung các nguyên liệu/từ khóa chính: "${overlap.join(', ')}"` 
+          });
+        }
+      }
+
+      return {
+        hasExact: exactMatches.length > 0,
+        hasSimilar: similarMatches.length > 0,
+        exactMatches,
+        similarMatches
+      };
+    }
+
+    // On user typing dish name
+    function onDishNameInput(val) {
+      clearTimeout(debounceTimer);
+      pendingForceAllow = false;
+      const feedbackBox = document.getElementById('duplicateFeedback');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (!val || val.trim().length < 2) {
+        feedbackBox.classList.add('hidden');
+        submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        submitBtn.disabled = false;
+        return;
+      }
+
+      debounceTimer = setTimeout(() => {
+        const result = checkDuplicate(val, currentDate);
+        feedbackBox.classList.remove('hidden');
+
+        if (result.hasExact) {
+          // Báo động ĐỎ: Trùng hoàn toàn
+          const names = result.exactMatches.map(m => `<b>${escapeHtml(m.dish_name)}</b> (do <i>${escapeHtml(m.user_name)}</i> mang)`).join(', ');
+          feedbackBox.className = 'mt-2 rounded-xl p-3 text-xs bg-rose-50 border border-rose-200 text-rose-800 transition-all';
+          feedbackBox.innerHTML = `
+            <div class="flex items-start gap-2">
+              <span class="text-base">🚨</span>
+              <div class="space-y-1">
+                <p class="font-bold">Món này ĐÃ ĐƯỢC ĐĂNG KÝ!</p>
+                <p class="text-rose-700 leading-relaxed">Đã có ${names}. Anh em nên đổi sang món khác để bữa trưa có nhiều món phong phú hơn nhé!</p>
+                <div class="pt-1 flex items-center gap-2">
+                  <button type="button" onclick="allowForceRegister()" class="text-[11px] underline font-semibold text-rose-800 hover:text-rose-950">
+                    Tôi vẫn muốn mang thêm món này
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+        } else if (result.hasSimilar) {
+          // Báo động VÀNG: Trùng một phần / Món tương tự
+          const matchDetails = result.similarMatches.map(m => `<li>• <b>${escapeHtml(m.item.dish_name)}</b> (${escapeHtml(m.item.user_name)}) - <i>${escapeHtml(m.reason)}</i></li>`).join('');
+          feedbackBox.className = 'mt-2 rounded-xl p-3 text-xs bg-amber-50 border border-amber-200 text-amber-900 transition-all';
+          feedbackBox.innerHTML = `
+            <div class="flex items-start gap-2">
+              <span class="text-base">⚠️</span>
+              <div class="space-y-1">
+                <p class="font-bold">Lưu ý: Có món tương tự đã đăng ký</p>
+                <ul class="text-amber-800 space-y-0.5">${matchDetails}</ul>
+                <p class="text-[11px] text-amber-700 pt-0.5">Bạn vẫn có thể đăng ký bình thường nếu khác hương vị, hoặc chọn món khác cho bữa ăn đa dạng hơn.</p>
+              </div>
+            </div>
+          `;
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        } else {
+          // Báo XANH: Món độc đáo chưa ai mang
+          feedbackBox.className = 'mt-2 rounded-xl p-3 text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 transition-all';
+          feedbackBox.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="text-base">✅</span>
+              <div>
+                <span class="font-bold">Món tuyệt vời!</span> Chưa có ai mang món này hôm nay.
+              </div>
+            </div>
+          `;
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+        }
+      }, 200);
+    }
+
+    function allowForceRegister() {
+      pendingForceAllow = true;
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+      showToast('Đã mở khóa nút gửi! Bạn có thể tiếp tục đăng ký.', '🔓');
+    }
+
+    // Handle Form Submit
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const userName = document.getElementById('userName').value.trim();
+      const dishName = document.getElementById('dishName').value.trim();
+      const servings = parseInt(document.getElementById('servings').value) || 4;
+      const note = document.getElementById('dishNote').value.trim();
+      const categoryRadio = document.querySelector('input[name="category"]:checked');
+      const category = categoryRadio ? categoryRadio.value : 'khac';
+
+      if (!userName || !dishName) {
+        showToast('Vui lòng nhập đầy đủ tên và món ăn!', '⚠️');
+        return;
+      }
+
+      // Check duplicate again
+      const checkResult = checkDuplicate(dishName, currentDate);
+      if (checkResult.hasExact && !pendingForceAllow) {
+        showToast('Món ăn đã bị trùng! Vui lòng chọn món khác.', '❌');
+        return;
+      }
+
+      // Save user name for convenience
+      localStorage.setItem('last_user_name', userName);
+
+      const payload = {
+        user_name: userName,
+        dish_name: dishName,
+        category: category,
+        servings: servings,
+        note: note,
+        lunch_date: currentDate,
+        force: pendingForceAllow
+      };
+
+      if (isServerMode) {
+        try {
+          const res = await fetch('/api/dishes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          if (json.success) {
+            showToast(`Đã thêm món "${dishName}" thành công!`, '🎉');
+            resetForm();
+            loadDishes();
+          } else {
+            showToast(json.error || 'Có lỗi xảy ra', '❌');
+          }
+        } catch (err) {
+          console.error(err);
+          // fallback local
+          addDishLocal(payload);
+        }
+      } else {
+        addDishLocal(payload);
+      }
+    }
+
+    function addDishLocal(item) {
+      item.id = Date.now();
+      dishesData.unshift(item);
+      saveLocalDishes();
+      showToast(`Đã thêm món "${item.dish_name}" thành công!`, '🎉');
+      resetForm();
+      renderDishesList();
+      renderStats();
+    }
+
+    function resetForm() {
+      document.getElementById('dishName').value = '';
+      document.getElementById('dishNote').value = '';
+      document.getElementById('duplicateFeedback').classList.add('hidden');
+      pendingForceAllow = false;
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+    }
+
+    // Delete a dish
+    async function deleteDish(id, dishName) {
+      if (!confirm(`Bạn có chắc chắn muốn hủy đăng ký món "${dishName}" không?`)) {
+        return;
+      }
+
+      if (isServerMode) {
+        try {
+          const res = await fetch(`/api/dishes/${id}`, { method: 'DELETE' });
+          const json = await res.json();
+          if (json.success) {
+            showToast(`Đã xóa món "${dishName}"`, '🗑️');
+            loadDishes();
+            return;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // Local fallback
+      dishesData = dishesData.filter(d => d.id !== id);
+      saveLocalDishes();
+      showToast(`Đã xóa món "${dishName}"`, '🗑️');
+      renderDishesList();
+      renderStats();
+    }
+
+    // Render registered dishes list
+    function renderDishesList() {
+      const container = document.getElementById('dishesListContainer');
+      const searchQuery = document.getElementById('searchFilter').value.toLowerCase().trim();
+      
+      const filtered = dishesData.filter(item => {
+        // Date match
+        if (item.lunch_date !== currentDate) return false;
+
+        // Category match
+        if (currentCategoryFilter !== 'all' && item.category !== currentCategoryFilter) return false;
+
+        // Search match
+        if (searchQuery) {
+          const fullText = (item.dish_name + ' ' + item.user_name + ' ' + (item.note || '')).toLowerCase();
+          if (!fullText.includes(searchQuery)) return false;
+        }
+
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-slate-100 shadow-sm">
+            <span class="text-4xl block mb-2">🍽️</span>
+            <p class="text-sm font-bold text-slate-700">Chưa có món nào đăng ký</p>
+            <p class="text-xs text-slate-400 mt-1">Hãy là người đầu tiên đăng ký món ăn thơm ngon cho ngày này nhé!</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const catInfo = CATEGORIES[item.category] || CATEGORIES.khac;
+        return `
+          <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 hover:border-amber-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+            <div class="flex items-start space-x-3.5">
+              <div class="w-11 h-11 rounded-xl ${catInfo.color.split(' ')[0]} flex items-center justify-center text-xl shrink-0 shadow-sm">
+                ${catInfo.icon}
+              </div>
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h4 class="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-600 transition">
+                    ${escapeHtml(item.dish_name)}
+                  </h4>
+                  <span class="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border ${catInfo.color}">
+                    ${catInfo.label}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                  <span class="font-medium text-slate-700 flex items-center gap-1">
+                    👤 <b>${escapeHtml(item.user_name)}</b>
+                  </span>
+                  <span>•</span>
+                  <span>👥 Khẩu phần: <b>${item.servings || 4} người</b></span>
+                  ${item.note ? `<span>•</span><span class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded italic">"${escapeHtml(item.note)}"</span>` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center justify-end sm:justify-start gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-50">
+              <button onclick="deleteDish(${item.id}, '${escapeJs(item.dish_name)}')" 
+                title="Xóa món này" 
+                class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition text-xs flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span class="sm:hidden">Hủy</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Category filter button clicked
+    function setCategoryFilter(cat) {
+      currentCategoryFilter = cat;
+      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-cat') === cat) {
+          btn.className = 'cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-amber-500 text-white';
+        } else {
+          btn.className = 'cat-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200';
+        }
+      });
+      renderDishesList();
+    }
+
+    // Calculate Nutritional Balance & Stats
+    function renderStats() {
+      const currentDishes = dishesData.filter(d => d.lunch_date === currentDate);
+      const totalDishes = currentDishes.length;
+
+      document.getElementById('dishCountBadge').textContent = `${totalDishes} món`;
+
+      // Count per category
+      const counts = { man: 0, canh: 0, rau: 0, tinh_bot: 0, trang_mieng: 0 };
+      currentDishes.forEach(d => {
+        if (counts[d.category] !== undefined) {
+          counts[d.category]++;
+        }
+      });
+
+      // Advice message
+      const advisor = document.getElementById('menuAdvisorText');
+      if (totalDishes === 0) {
+        advisor.textContent = 'Chưa có món nào hôm nay. Hãy cùng rủ anh em đăng ký nhé!';
+      } else if (counts.canh === 0) {
+        advisor.innerHTML = '💡 <span class="text-amber-700 font-semibold">Chưa có món canh nào!</span> Anh em tiếp theo nên đăng ký thêm một nồi canh chua/súp thanh mát nhé.';
+      } else if (counts.rau === 0) {
+        advisor.innerHTML = '💡 <span class="text-emerald-700 font-semibold">Thiếu món rau/salad!</span> Cần thêm rau luộc hoặc dưa góp để đỡ ngấy.';
+      } else if (counts.tinh_bot === 0) {
+        advisor.innerHTML = '💡 <span class="text-amber-800 font-semibold">Ai cắm cơm chưa?</span> Chưa thấy ai đăng ký cơm trắng hoặc bánh mì/xôi.';
+      } else {
+        advisor.innerHTML = '🎉 <span class="text-emerald-700 font-semibold">Thực đơn cực kỳ cân bằng!</span> Đầy đủ mặn, canh, rau củ và tinh bột.';
+      }
+
+      // Render category stats grid
+      const statsGrid = document.getElementById('categoryStatsGrid');
+      const catKeys = ['man', 'canh', 'rau', 'tinh_bot', 'trang_mieng'];
+      statsGrid.innerHTML = catKeys.map(k => {
+        const info = CATEGORIES[k];
+        const count = counts[k] || 0;
+        return `
+          <div class="rounded-xl p-3 border ${count > 0 ? 'border-amber-200 bg-amber-50/50' : 'border-slate-100 bg-slate-50/50'} flex items-center space-x-2.5">
+            <span class="text-2xl">${info.icon}</span>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500">${info.label.split(' / ')[0]}</p>
+              <p class="text-sm font-extrabold ${count > 0 ? 'text-amber-900' : 'text-slate-400'}">${count} món</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Copy formatted menu to clipboard for Telegram/Zalo/Slack
+    function copyMenuToClipboard() {
+      const currentDishes = dishesData.filter(d => d.lunch_date === currentDate);
+      if (currentDishes.length === 0) {
+        showToast('Chưa có món nào để sao chép!', '⚠️');
+        return;
+      }
+
+      let text = `🍱 THỰC ĐƠN CƠM TRƯA ANH EM (${currentDate})\n`;
+      text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+
+      const grouped = {};
+      currentDishes.forEach(d => {
+        const cat = CATEGORIES[d.category] ? CATEGORIES[d.category].label : 'Khác';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(d);
+      });
+
+      for (const [catName, list] of Object.entries(grouped)) {
+        text += `\n📌 ${catName}:\n`;
+        list.forEach(item => {
+          text += `  • ${item.dish_name} (bởi ${item.user_name}${item.note ? ' - ' + item.note : ''})\n`;
+        });
+      }
+
+      text += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
+      text += `👉 Tổng cộng: ${currentDishes.length} món. Chúc anh em bữa trưa ngon miệng! 😋`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Đã sao chép menu! Dán ngay vào Zalo/Slack nhé.', '📋');
+      }).catch(() => {
+        showToast('Không thể sao chép tự động', '❌');
+      });
+    }
+
+    // Export dishes to CSV file
+    function exportToCsv() {
+      const currentDishes = dishesData.filter(d => d.lunch_date === currentDate);
+      if (currentDishes.length === 0) {
+        showToast('Chưa có món nào để xuất file!', '⚠️');
+        return;
+      }
+
+      let csv = "\uFEFF"; // UTF-8 BOM
+      csv += "Tên người đăng ký,Món ăn,Phân loại,Khẩu phần,Ghi chú,Ngày\n";
+
+      currentDishes.forEach(d => {
+        const cat = CATEGORIES[d.category] ? CATEGORIES[d.category].label : 'Khác';
+        csv += `"${d.user_name}","${d.dish_name}","${cat}",${d.servings || 4},"${d.note || ''}","${d.lunch_date}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `com_trua_${currentDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Đã tải xuống file CSV!', '📥');
+    }
+
+    // Toast utility
+    function showToast(msg, icon = '✨') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3200);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeJs(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

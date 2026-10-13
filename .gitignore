@@ -1,0 +1,4 @@
+*.log
+current_url.txt
+__pycache__/
+*.pyc
