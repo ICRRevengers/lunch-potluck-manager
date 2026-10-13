@@ -45,8 +45,8 @@ def init_db():
     """
     )
 
-    # Thêm dữ liệu mẫu nếu bảng còn trống
-    cursor.execute("SELECT COUNT(*) FROM dishes")
+    # Thêm dữ liệu mẫu cho ngày 20/10/2026 nếu chưa có
+    cursor.execute("SELECT COUNT(*) FROM dishes WHERE lunch_date = '2026-10-20'")
     count = cursor.fetchone()[0]
     if count == 0:
         sample_dishes = [
@@ -55,8 +55,8 @@ def init_db():
                 "Thịt ba chỉ kho trứng cút",
                 "man",
                 5,
-                "Có kèm ớt cay riêng",
-                "2026-10-13",
+                "Kho đậm đà, có kèm ớt cay riêng",
+                "2026-10-20",
             ),
             (
                 "Chị Mai",
@@ -64,31 +64,31 @@ def init_db():
                 "canh",
                 6,
                 "Có bạc hà, giá, đậu bắp",
-                "2026-10-13",
+                "2026-10-20",
             ),
             (
                 "Hoàng Nam",
                 "Rau muống luộc + Nước mắm tỏi ớt",
                 "rau",
                 6,
-                "Lấy cả nước canh dầm sấu",
-                "2026-10-13",
+                "Lấy cả nước canh dầm sấu thanh mát",
+                "2026-10-20",
             ),
             (
                 "Khánh Linh",
-                "Dưa hấu tráng miệng",
+                "Dưa hấu & Hoa quả tráng miệng",
                 "trang_mieng",
                 8,
                 "Đã gọt sẵn bỏ hộp lạnh",
-                "2026-10-13",
+                "2026-10-20",
             ),
             (
                 "Đức Anh",
                 "Cơm trắng dẻo thơm (nồi cơm điện)",
                 "tinh_bot",
                 10,
-                "Nấu tại pantry công ty",
-                "2026-10-13",
+                "Cắm tại pantry lúc 11h30",
+                "2026-10-20",
             ),
         ]
         cursor.executemany(
@@ -316,6 +316,16 @@ class PotluckHandler(http.server.SimpleHTTPRequestHandler):
                 )
                 return
 
+            import datetime
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            expire_utc = datetime.datetime(2026, 10, 20, 16, 59, 59, tzinfo=datetime.timezone.utc)
+            if now_utc > expire_utc:
+                self._send_json({
+                    "success": False,
+                    "error": "Thời hạn đăng ký 20/10 Lunch Prepare đã kết thúc lúc 23:59 ngày 20/10/2026!"
+                }, 403)
+                return
+
             # Kiểm tra trùng lặp trước khi lưu
             dup_check = check_dish_duplicate(dish_name, lunch_date)
             # Nếu người dùng không bắt buộc ghi đè mà bị trùng tuyệt đối
@@ -383,7 +393,7 @@ def main():
     local_ip = get_local_ip()
     server = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), PotluckHandler)
     print("=" * 60)
-    print("🍱 LUNCH POTLUCK MANAGER - HỆ THỐNG QUẢN LÝ MÓN ĂN VĂN PHÒNG")
+    print("💐 20/10 LUNCH PREPARE - HỆ THỐNG QUẢN LÝ BỮA TRƯA VĂN PHÒNG")
     print("=" * 60)
     print(f"👉 Máy bạn truy cập:         http://localhost:{PORT}")
     print(f"👉 Anh em cùng mạng Wi-Fi:   http://{local_ip}:{PORT}")
